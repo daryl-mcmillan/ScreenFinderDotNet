@@ -50,13 +50,31 @@ namespace ScreenFinderDotNet.Dial
             }
             string requestText = Encoding.UTF8.GetString(buffer, 0, received);
             Console.WriteLine(requestText);
-            string responseText = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
-            byte[] responseData = Encoding.UTF8.GetBytes( responseText);
-            client.Send( responseData);
+
+            if (requestText.StartsWith("GET /dd.xml", StringComparison.InvariantCultureIgnoreCase))
+            {
+                SendDD(client);
+            }
+            else
+            {
+                Send404(client);
+            }
             client.Dispose();
         }
 
-        
+        private void SendDD(Socket socket)
+        {
+            string responseText = "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: 47\r\nApplication-URL: http://192.168.1.101:34567/apps\r\n\r\n<root xmlns=\"urn:schemas-upnp-org:device-1-0\"/>";
+            byte[] responseData = Encoding.UTF8.GetBytes(responseText);
+            socket.Send(responseData);
+        }
+
+        private void Send404(Socket socket)
+        {
+            string responseText = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n";
+            byte[] responseData = Encoding.UTF8.GetBytes(responseText);
+            socket.Send(responseData);
+        }
 
         private void HandleRequest(HttpListenerContext context)
         {
