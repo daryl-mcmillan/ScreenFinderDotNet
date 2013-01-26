@@ -14,18 +14,20 @@ namespace ScreenFinderDotNet.Upnp
         private static readonly IPAddress UPNP_ADDR = new IPAddress(new byte[] { 239, 255, 255, 250 });
         private const int UPNP_PORT = 1900;
         private readonly UdpClient m_client;
+        private readonly IUpnpHandler[] m_handlers;
         private bool m_disposed = false;
 
-        private UpnpService( UdpClient client )
+        private UpnpService( UdpClient client, IUpnpHandler[] handlers )
         {
             m_client = client;
+            m_handlers = handlers;
         }
 
-        public static UpnpService Start()
+        public static UpnpService Start( params IUpnpHandler[] handlers )
         {
             UdpClient udp = new UdpClient(UPNP_PORT);
             udp.JoinMulticastGroup(UPNP_ADDR);
-            UpnpService service = new UpnpService(udp);
+            UpnpService service = new UpnpService(udp, handlers);
             service.Accept();
             return service;
         }
@@ -50,8 +52,15 @@ namespace ScreenFinderDotNet.Upnp
             string requestString = DecodeOrNull(requestData);
             if (!String.IsNullOrEmpty(requestString))
             {
+
+                Action<string> replyFunc = delegate(string message)
+                {
+                    byte[] responseData = Encoding.UTF8.GetBytes(message);
+                    m_client.Send(responseData, responseData.Length, clientInfo);
+                };
+
                 UpnpRequest request;
-                bool parsed = UpnpRequest.TryParse(clientInfo, requestString, out request);
+                bool parsed = UpnpRequest.TryParse( replyFunc, clientInfo, requestString, out request);
                 if (parsed)
                 {
                     ProcessRequest(request);
@@ -62,17 +71,9 @@ namespace ScreenFinderDotNet.Upnp
 
         private void ProcessRequest(UpnpRequest request)
         {
-            if (request.Verb == "M-SEARCH"
-                && request.Uri == "*")
+            foreach (IUpnpHandler handler in m_handlers)
             {
-                bool multiscreenRequest = request
-                    .Headers["ST"]
-                    .Any(h => h.Value == "urn:dial-multiscreen-org:service:dial:1");
-
-                if (multiscreenRequest)
-                {
-                    Console.WriteLine("multiscreen");
-                }
+                handler.ProcessRequest(request);
             }
 
         }

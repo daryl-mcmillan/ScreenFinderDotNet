@@ -25,6 +25,7 @@ namespace ScreenFinderDotNet.Upnp
             | RegexOptions.IgnoreCase
         );
 
+        private readonly Action<string> m_replyFunc;
         private readonly IPEndPoint m_clientEndPoint;
         private readonly string m_verb;
         private readonly string m_uri;
@@ -32,6 +33,7 @@ namespace ScreenFinderDotNet.Upnp
         private UpnpHeaderCollection m_headers;
 
         public UpnpRequest(
+                Action<string> replyFunc,
                 IPEndPoint clientEndPoint,
                 string verb,
                 string uri,
@@ -39,6 +41,7 @@ namespace ScreenFinderDotNet.Upnp
                 IEnumerable<UpnpHeader> headers
             )
         {
+            m_replyFunc = replyFunc;
             m_clientEndPoint = clientEndPoint;
             m_verb = verb;
             m_uri = uri;
@@ -71,7 +74,16 @@ namespace ScreenFinderDotNet.Upnp
             get { return m_headers; }
         }
 
+        public void Reply(Action<UpnpResponseBuilder> writer)
+        {
+            UpnpResponseBuilder builder = new UpnpResponseBuilder( m_httpVersion );
+            writer(builder);
+            string response = builder.FormatResponse();
+            m_replyFunc(response);
+        }
+
         public static bool TryParse(
+                Action<string> replyFunc,
                 IPEndPoint clientEndPoint,
                 string message,
                 out UpnpRequest request
@@ -99,6 +111,7 @@ namespace ScreenFinderDotNet.Upnp
                 .Where(h => h != null).ToArray();
 
             request = new UpnpRequest(
+                replyFunc,
                 clientEndPoint,
                 verb,
                 uri,

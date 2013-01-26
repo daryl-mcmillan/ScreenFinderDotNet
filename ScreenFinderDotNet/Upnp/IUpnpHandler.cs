@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ScreenFinderDotNet.Upnp
 {
-    internal interface IUpnpHander
+    internal interface IUpnpHandler
     {
 
         void ProcessRequest(UpnpRequest request);
