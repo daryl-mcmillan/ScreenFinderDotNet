@@ -50,7 +50,9 @@ namespace ScreenFinderDotNet.Dial
                 {
                     builder.SetStatus(200, "OK");
                     builder.AddHeader("LOCATION", m_descriptorLocation );
-                    builder.AddHeader("CACHE-CONTROL", "max-age=0");
+                    builder.AddHeader("CACHE-CONTROL", "max-age=300");
+                    builder.AddHeader("EXT", "");
+                    builder.AddHeader("BOOTID.UPNP.ORG", "1");
                     builder.AddHeader("ST", "urn:dial-multiscreen-org:service:dial:1");
                 }
             );
